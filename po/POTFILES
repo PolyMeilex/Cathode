@@ -1,0 +1,4 @@
+data/com.github.polymeilex.Cathode.desktop.in
+data/com.github.polymeilex.Cathode.appdata.xml.in
+data/com.github.polymeilex.Cathode.gschema.xml
+src/window.ui

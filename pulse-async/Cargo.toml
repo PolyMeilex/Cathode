@@ -1,0 +1,11 @@
+[package]
+name = "pulse-async"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+pulse = { version = "2.26", package = "libpulse-binding" }
+libpulse-glib-binding = "2.25"
+glib = "0.15"
+
+futures = "0.3"

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="OutputPage" parent="AdwBin">
+    <child>
+      <object class="GtkScrolledWindow">
+        <child>
+          <object class="AdwClamp">
+            <property name="maximum-size">1500</property>
+            <property name="tightening-threshold">200</property>
+            <property name="child">
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+
+                <child>
+                  <object class="AdwPreferencesGroup">
+                    <property name="title">Output</property>
+
+                    <child>
+                      <object class="GtkFlowBox" id="flow_box">
+                        <property name="valign">start</property>
+                        <property name="homogeneous">true</property>
+                        <property name="selection-mode">none</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwPreferencesGroup">
+                    <property name="title">Input</property>
+
+                    <child>
+                      <object class="GtkFlowBox">
+                        <property name="valign">start</property>
+                        <property name="homogeneous">true</property>
+                        <property name="selection-mode">none</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+              </object>
+
+            </property>
+
+          </object>
+        </child>
+
+      </object>
+    </child>
+  </template>
+</interface>

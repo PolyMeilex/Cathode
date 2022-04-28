@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <object class="GtkAdjustment" id="adjustment1">
+    <property name="upper">100</property>
+    <property name="value">44.2408370972</property>
+    <property name="step-increment">5</property>
+  </object>
+  <template class="CathodeWindow" parent="AdwApplicationWindow">
+    <property name="default-width">850</property>
+    <property name="default-height">800</property>
+    <child>
+      <object class="GtkBox">
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="AdwHeaderBar">
+            <property name="centering-policy">strict</property>
+            <property name="title-widget">
+              <object class="AdwViewSwitcherTitle" id="switcher_title">
+                <property name="stack">stack</property>
+              </object>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="AdwViewStack" id="stack">
+            <property name="vexpand">True</property>
+
+            <child>
+              <object class="AdwViewStackPage">
+                <property name="name">page1</property>
+                <property name="title" translatable="yes">_Apps</property>
+                <property name="icon-name">grid-large-symbolic</property>
+                <property name="use-underline">True</property>
+                <property name="child">
+                  <object class="PlaybackPage" id="playback_page" />
+                </property>
+              </object>
+            </child>
+
+            <child>
+              <object class="AdwViewStackPage">
+                <property name="name">page3</property>
+                <property name="title" translatable="yes">_Devices</property>
+                <property name="icon-name">hardware-symbolic</property>
+                <property name="use-underline">True</property>
+                <property name="child">
+                  <object class="OutputPage" id="output_page" />
+                </property>
+              </object>
+            </child>
+
+            <child>
+              <object class="AdwViewStackPage">
+                <property name="name">page5</property>
+                <property name="title" translatable="yes">_Configuration</property>
+                <property name="icon-name">settings-symbolic</property>
+                <property name="use-underline">True</property>
+                <property name="child">
+                  <object class="GtkLabel">
+                    <property name="label" translatable="yes">...</property>
+                  </object>
+                </property>
+              </object>
+            </child>
+
+          </object>
+        </child>
+        <child>
+          <object class="AdwViewSwitcherBar" id="switcher_bar">
+            <property name="stack">stack</property>
+            <property name="reveal" bind-source="switcher_title" bind-property="title-visible" bind-flags="sync-create" />
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=cathode
+Exec=cathode
+Icon=com.github.polymeilex.Cathode
+Terminal=false
+Type=Application
+Categories=GTK;
+StartupNotify=true

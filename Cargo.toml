@@ -1,0 +1,21 @@
+[package]
+name = "cathode"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+members = ["pulse-async"]
+
+[dependencies]
+gettext-rs = { version = "0.7", features = ["gettext-system"] }
+gtk = { version = "0.4.7", features = ["v4_6"], package = "gtk4" }
+adw = { version = "0.1.1", package = "libadwaita" }
+
+pulse = { version = "*", package = "libpulse-binding" }
+pulse-async = { path = "./pulse-async" }
+
+once_cell = "1.10.0"
+futures = "0.3"
+
+glib = "0.15.9"
+lerp = "0.4.0"

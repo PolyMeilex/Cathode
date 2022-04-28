@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="LevelBox" parent="GtkWidget">
+    <child>
+      <object class="GtkLevelBar" id="level_bar">
+        <property name="max-value">10</property>
+        <property name="orientation">vertical</property>
+        <property name="inverted">true</property>
+      </object>
+    </child>
+
+    <child>
+      <object class="GtkImage" id="image">
+        <property name="icon-name" bind-source="LevelBox" bind-property="icon-name" bind-flags="sync-create" />
+        <property name="icon-size">large</property>
+      </object>
+    </child>
+  </template>
+</interface>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/com/github/polymeilex/Cathode/icons/scalable/actions/">
+    <file preprocess="xml-stripblanks">grid-large-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">hardware-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">settings-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">audio-speakers-symbolic.svg</file>
+  </gresource>
+</gresources>
