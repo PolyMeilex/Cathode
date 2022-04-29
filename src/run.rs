@@ -106,7 +106,7 @@ pub fn run(win: &CathodeWindow) {
         )
         .unwrap();
 
-    let mut context = pulse_async::context::Context::new_with_proplist("Cathode", &proplist);
+    let context = pulse_async::context::Context::new_with_proplist("Cathode", &proplist);
 
     let playback_page = win.playback_page().clone();
     let output_page = win.output_page().clone();
@@ -157,9 +157,10 @@ pub fn run(win: &CathodeWindow) {
                 .ok();
             });
 
-            let mut context = context.context.borrow_mut();
+            let mut inner = context.inner.borrow_mut();
+            let context = &mut inner.context;
 
-            crate_stream(&mut context, input.sink, Some(id), item.level_bar().clone());
+            crate_stream(context, input.sink, Some(id), item.level_bar().clone());
         }
 
         let sink_list = context
