@@ -146,20 +146,20 @@ pub fn run(win: &CathodeWindow) {
             let item = playback_page.add_item(&input);
 
             let tx = tx.clone();
-            item.connect_volume_changed(move |scale, done_notify| {
-                let volume = scale.value();
+            // item.connect_volume_changed(move |scale, done_notify| {
+            //     let volume = scale.value();
 
-                tx.unbounded_send(Event::SetSinkInputVolume {
-                    id,
-                    volume,
-                    done_notify,
-                })
-                .ok();
-            });
+            //     tx.unbounded_send(Event::SetSinkInputVolume {
+            //         id,
+            //         volume,
+            //         done_notify,
+            //     })
+            //     .ok();
+            // });
 
-            let mut context = context.context.borrow_mut();
+            // let mut context = context.context.borrow_mut();
 
-            crate_stream(&mut context, input.sink, Some(id), item.level_bar().clone());
+            // crate_stream(&mut context, input.sink, Some(id), item.level_bar().clone());
         }
 
         let sink_list = context

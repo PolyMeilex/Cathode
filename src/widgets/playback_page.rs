@@ -1,14 +1,17 @@
 use std::{cell::RefMut, collections::HashMap};
 
 use adw::gtk;
-use gtk::subclass::prelude::ObjectSubclassIsExt;
+use glib::{subclass::types::ObjectSubclassExt, Cast};
+use gtk::{subclass::prelude::ObjectSubclassIsExt, traits::WidgetExt};
 use pulse::{context::subscribe::Operation, proplist::properties};
 
 use pulse_async::SinkInputInfo;
 
 use super::PlaybackItem;
+use crate::models::{sink_input::SinkInput, sink_input_model::SinkInputModel};
 
 mod imp {
+    use super::*;
     use std::cell::RefCell;
     use std::collections::HashMap;
 
@@ -32,6 +35,8 @@ mod imp {
         pub input_flow_box: TemplateChild<gtk::FlowBox>,
 
         pub items: RefCell<HashMap<u32, PlaybackItem>>,
+
+        pub model: SinkInputModel,
     }
 
     #[glib::object_subclass]
@@ -50,7 +55,12 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for PlaybackPage {}
+    impl ObjectImpl for PlaybackPage {
+        fn constructed(&self, obj: &Self::Type) {
+            self.parent_constructed(obj);
+            obj.init();
+        }
+    }
     impl WidgetImpl for PlaybackPage {}
     impl BuildableImpl for PlaybackPage {}
     impl BinImpl for PlaybackPage {}
@@ -64,7 +74,21 @@ glib::wrapper! {
 
 impl PlaybackPage {
     pub fn new() -> Self {
-        glib::Object::new(&[]).expect("Failed to create ChannelScale")
+        let this: Self = glib::Object::new(&[]).expect("Failed to create ChannelScale");
+        this.init();
+        this
+    }
+
+    fn init(&self) {
+        let this = self.imp();
+        this.flow_box.bind_model(Some(&this.model), |obj| {
+            let data = obj.downcast_ref::<SinkInput>().unwrap();
+            let item = PlaybackItem::new();
+            item.set_title(&data.title());
+            item.set_subtitle(&data.subtitle());
+            item.set_icon(&data.icon_name());
+            item.upcast::<gtk::Widget>()
+        })
     }
 
     pub fn playback_items(&self) -> RefMut<HashMap<u32, PlaybackItem>> {
@@ -89,51 +113,54 @@ impl PlaybackPage {
         }
     }
 
-    pub fn add_item(&self, info: &SinkInputInfo) -> PlaybackItem {
-        let id = info.index;
+    pub fn add_item(&self, info: &SinkInputInfo) {
+        let sink_input = SinkInput::new(info);
+        self.imp().model.add_sink_input(&sink_input);
 
-        let item = {
-            let mut items = self.imp().items.borrow_mut();
+        // let id = info.index;
 
-            if let Some(item) = items.get(&id) {
-                item.clone()
-            } else {
-                let item = PlaybackItem::new();
+        // let item = {
+        //     let mut items = self.imp().items.borrow_mut();
 
-                self.imp().flow_box.get().append(&item);
-                items.insert(id, item.clone());
+        //     if let Some(item) = items.get(&id) {
+        //         item.clone()
+        //     } else {
+        //         let item = PlaybackItem::new();
 
-                item
-            }
-        };
+        //         self.imp().flow_box.get().append(&item);
+        //         items.insert(id, item.clone());
 
-        let app_name = info.proplist.get_str(properties::APPLICATION_NAME);
+        //         item
+        //     }
+        // };
 
-        let title = glib::markup_escape_text(app_name.as_deref().unwrap_or(""));
-        item.set_title(title.as_str());
-        let subtitle = glib::markup_escape_text(info.name.as_deref().unwrap_or("Unknown"));
-        item.set_subtitle(subtitle.as_str());
+        // let app_name = info.proplist.get_str(properties::APPLICATION_NAME);
 
-        if let Some(icon) = info.proplist.get_str(properties::APPLICATION_ICON_NAME) {
-            item.set_icon(&icon);
-        } else {
-            let theme = gtk::IconTheme::default();
+        // let title = glib::markup_escape_text(app_name.as_deref().unwrap_or(""));
+        // item.set_title(title.as_str());
+        // let subtitle = glib::markup_escape_text(info.name.as_deref().unwrap_or("Unknown"));
+        // item.set_subtitle(subtitle.as_str());
 
-            if let Some(name) = app_name {
-                let name = name.to_lowercase();
+        // if let Some(icon) = info.proplist.get_str(properties::APPLICATION_ICON_NAME) {
+        //     item.set_icon(&icon);
+        // } else {
+        //     let theme = gtk::IconTheme::default();
 
-                if theme.has_icon(&name) {
-                    item.set_icon(&name);
-                }
-            }
-        }
+        //     if let Some(name) = app_name {
+        //         let name = name.to_lowercase();
 
-        item
+        //         if theme.has_icon(&name) {
+        //             item.set_icon(&name);
+        //         }
+        //     }
+        // }
+
+        // item
     }
 
     pub fn remove_item(&self, id: u32) {
-        if let Some(item) = self.imp().items.borrow_mut().remove(&id) {
-            self.imp().flow_box.remove(&item);
-        }
+        // if let Some(item) = self.imp().items.borrow_mut().remove(&id) {
+        //     self.imp().flow_box.remove(&item);
+        // }
     }
 }

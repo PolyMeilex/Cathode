@@ -15,7 +15,9 @@ pulse = { version = "*", package = "libpulse-binding" }
 pulse-async = { path = "./pulse-async" }
 
 once_cell = "1.10.0"
+indexmap = "1.8.1"
 futures = "0.3"
+log = "0.4.16"
 
 glib = "0.15.9"
 lerp = "0.4.0"

@@ -1,5 +1,6 @@
 mod application;
 mod config;
+mod models;
 mod run;
 mod widgets;
 mod window;
