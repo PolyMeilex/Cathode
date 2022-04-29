@@ -20,9 +20,14 @@ pub type ContextRc = Rc<RefCell<pulse::context::Context>>;
 
 pub type SubscribeEvent = Result<(Option<Facility>, Option<Operation>, u32), ()>;
 
-pub struct Context {
-    pub context: ContextRc,
+pub struct Inner {
+    pub context: pulse::context::Context,
     _mainloop: Mainloop,
+}
+
+#[derive(Clone)]
+pub struct Context {
+    pub inner: Rc<RefCell<Inner>>,
 }
 
 impl std::fmt::Debug for Context {
@@ -38,30 +43,34 @@ impl Context {
     pub fn new_with_proplist(name: &str, proplist: &Proplist) -> Context {
         let mainloop = Mainloop::new(None).expect("Failed to create mainloop");
 
-        let context = Rc::new(RefCell::new(
-            context::Context::new_with_proplist(&mainloop, name, proplist)
-                .expect("Failed to create new context"),
-        ));
+        let context = context::Context::new_with_proplist(&mainloop, name, proplist)
+            .expect("Failed to create new context");
 
-        Context {
-            context,
-            _mainloop: mainloop,
+        Self {
+            inner: Rc::new(RefCell::new(Inner {
+                context,
+                _mainloop: mainloop,
+            })),
         }
     }
 
     pub async fn connect(&mut self, server: Option<&str>, flags: FlagSet) -> Result<(), PAErr> {
         let (mut tx, mut rx) = futures::channel::mpsc::unbounded::<()>();
 
-        self.context
+        self.inner
             .borrow_mut()
+            .context
             .set_state_callback(Some(Box::new(move || {
                 tx.start_send(()).ok();
             })));
 
-        self.context.borrow_mut().connect(server, flags, None)?;
+        self.inner
+            .borrow_mut()
+            .context
+            .connect(server, flags, None)?;
 
         while rx.next().await.is_some() {
-            match self.context.borrow_mut().get_state() {
+            match self.inner.borrow_mut().context.get_state() {
                 State::Ready => {
                     return Ok(());
                 }
@@ -79,11 +88,11 @@ impl Context {
     }
 
     pub fn disconnect(&mut self) {
-        self.context.borrow_mut().disconnect();
+        self.inner.borrow_mut().context.disconnect();
     }
 
     pub fn introspect(&self) -> Introspector<'_> {
-        Introspector::from(self.context.borrow().introspect())
+        Introspector::from(self.inner.borrow().context.introspect())
     }
 
     pub fn subscribe(
@@ -99,15 +108,19 @@ impl Context {
             }
         });
 
-        self.context
+        self.inner
             .borrow_mut()
+            .context
             .set_subscribe_callback(Some(callback));
 
-        self.context.borrow_mut().subscribe(mask, move |success| {
-            if !success {
-                tx.start_send(Err(())).ok();
-            }
-        });
+        self.inner
+            .borrow_mut()
+            .context
+            .subscribe(mask, move |success| {
+                if !success {
+                    tx.start_send(Err(())).ok();
+                }
+            });
 
         rx
     }

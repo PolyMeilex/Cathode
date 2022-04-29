@@ -184,7 +184,8 @@ pub fn run(win: &CathodeWindow) {
                 .ok();
             });
 
-            let mut context = context.context.borrow_mut();
+            let mut inner = context.inner.borrow_mut();
+            let mut context = &mut inner.context;
 
             crate_stream(&mut context, id, None, item.level_bar().clone());
         }
