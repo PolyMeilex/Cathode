@@ -8,7 +8,6 @@ use adw::prelude::*;
 use futures::StreamExt;
 use pulse::context::subscribe::Facility;
 use pulse::context::subscribe::InterestMaskSet;
-use pulse::context::subscribe::Operation;
 use pulse::def::BufferAttr;
 
 use crate::window::CathodeWindow;
@@ -107,33 +106,26 @@ pub fn run(win: &CathodeWindow) {
         .unwrap();
 
     let context = pulse_async::context::Context::new_with_proplist("Cathode", &proplist);
+    win.init_context(context.clone());
 
-    let playback_page = win.playback_page().clone();
-    let output_page = win.output_page().clone();
+    let win = win.clone();
 
     glib::MainContext::default().spawn_local(async move {
         context.connect(None, FlagSet::NOFAIL).await.unwrap();
 
-        enum Event {
-            Subscription {
-                facility: Option<Facility>,
-                operation: Option<Operation>,
-                id: u32,
-            },
-            SetSinkVolume {
-                id: u32,
-                volume: f64,
-                done_notify: Box<dyn FnOnce()>,
-            },
-            SetSinkInputVolume {
-                id: u32,
-                volume: f64,
-                done_notify: Box<dyn FnOnce()>,
-            },
-            Error,
+        struct VolumeUpdateEvent {
+            id: u32,
+            volume: f64,
+            target: Target,
+            done_notify: Box<dyn FnOnce()>,
         }
 
-        let (tx, mut rx) = futures::channel::mpsc::unbounded::<Event>();
+        enum Target {
+            SinkVolume,
+            SinkInputVolume,
+        }
+
+        let (tx, mut rx) = futures::channel::mpsc::unbounded::<VolumeUpdateEvent>();
 
         let sink_input_list = context
             .introspect()
@@ -143,16 +135,17 @@ pub fn run(win: &CathodeWindow) {
 
         for input in sink_input_list {
             let id = input.index;
-            let item = playback_page.add_item(&input);
+            let item = win.playback_page().add_item(&input);
 
             let tx = tx.clone();
             item.connect_volume_changed(move |scale, done_notify| {
                 let volume = scale.value();
 
-                tx.unbounded_send(Event::SetSinkInputVolume {
+                tx.unbounded_send(VolumeUpdateEvent {
                     id,
                     volume,
                     done_notify,
+                    target: Target::SinkInputVolume,
                 })
                 .ok();
             });
@@ -171,16 +164,17 @@ pub fn run(win: &CathodeWindow) {
 
         for output in sink_list {
             let id = output.index;
-            let item = output_page.add_item(&output);
+            let item = win.output_page().add_item(&output);
 
             let tx = tx.clone();
             item.connect_volume_changed(move |scale, done_notify| {
                 let volume = scale.value();
 
-                tx.unbounded_send(Event::SetSinkVolume {
+                tx.unbounded_send(VolumeUpdateEvent {
                     id,
                     volume,
                     done_notify,
+                    target: Target::SinkVolume,
                 })
                 .ok();
             });
@@ -191,63 +185,47 @@ pub fn run(win: &CathodeWindow) {
             crate_stream(&mut context, id, None, item.level_bar().clone());
         }
 
-        let mut sub = context
-            .subscribe(InterestMaskSet::SINK_INPUT | InterestMaskSet::SINK)
-            .map(|sub| {
-                if let Ok((facility, operation, id)) = sub {
-                    Event::Subscription {
-                        facility,
-                        operation,
-                        id,
-                    }
-                } else {
-                    Event::Error
-                }
+        glib::MainContext::default().spawn_local(subscribe(win.clone()));
+
+        while let Some(event) = rx.next().await {
+            let mut introspect = context.introspect();
+            let id = event.id;
+            let volume = event.volume;
+
+            let _success = match event.target {
+                Target::SinkVolume => introspect.set_sink_volume(id, volume).await,
+                Target::SinkInputVolume => introspect.set_sink_input_volume(id, volume).await,
+            };
+
+            glib::timeout_add_local_once(Duration::from_millis(100), move || {
+                (event.done_notify)();
             });
-
-        while let Some(event) = futures::stream::select(&mut sub, &mut rx).next().await {
-            match event {
-                Event::Subscription {
-                    facility,
-                    operation,
-                    id,
-                } => match facility {
-                    Some(Facility::SinkInput) => {
-                        if let Some(ref op) = operation {
-                            playback_page.event(&context, op, id).await;
-                        }
-                    }
-                    Some(Facility::Sink) => {
-                        if let Some(ref op) = operation {
-                            output_page.event(&context, op, id).await;
-                        }
-                    }
-                    _ => {}
-                },
-                Event::SetSinkVolume {
-                    id,
-                    volume,
-                    done_notify,
-                } => {
-                    let _success = context.introspect().set_sink_volume(id, volume).await;
-
-                    glib::timeout_add_local_once(Duration::from_millis(100), move || {
-                        done_notify();
-                    });
-                }
-                Event::SetSinkInputVolume {
-                    id,
-                    volume,
-                    done_notify,
-                } => {
-                    let _success = context.introspect().set_sink_input_volume(id, volume).await;
-
-                    glib::timeout_add_local_once(Duration::from_millis(100), move || {
-                        done_notify();
-                    });
-                }
-                Event::Error => todo!(),
-            }
         }
     });
+}
+
+async fn subscribe(win: CathodeWindow) {
+    let context = win.context();
+    let mut sub = context.subscribe(InterestMaskSet::SINK_INPUT | InterestMaskSet::SINK);
+
+    let playback_page = win.playback_page().clone();
+    let output_page = win.output_page().clone();
+
+    while let Some(event) = sub.next().await {
+        if let Ok((facility, operation, id)) = event {
+            match facility {
+                Some(Facility::SinkInput) => {
+                    if let Some(ref op) = operation {
+                        playback_page.event(&context, op, id).await;
+                    }
+                }
+                Some(Facility::Sink) => {
+                    if let Some(ref op) = operation {
+                        output_page.event(&context, op, id).await;
+                    }
+                }
+                _ => {}
+            };
+        }
+    }
 }

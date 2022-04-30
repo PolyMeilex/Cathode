@@ -12,7 +12,7 @@ use pulse::{
     proplist::Proplist,
 };
 
-mod introspector;
+pub mod introspector;
 use introspector::Introspector;
 pub use introspector::*;
 
@@ -54,7 +54,7 @@ impl Context {
         }
     }
 
-    pub async fn connect(&mut self, server: Option<&str>, flags: FlagSet) -> Result<(), PAErr> {
+    pub async fn connect(&self, server: Option<&str>, flags: FlagSet) -> Result<(), PAErr> {
         let (mut tx, mut rx) = futures::channel::mpsc::unbounded::<()>();
 
         self.inner
@@ -95,10 +95,7 @@ impl Context {
         Introspector::from(self.inner.borrow().context.introspect())
     }
 
-    pub fn subscribe(
-        &mut self,
-        mask: InterestMaskSet,
-    ) -> impl futures::Stream<Item = SubscribeEvent> {
+    pub fn subscribe(&self, mask: InterestMaskSet) -> impl futures::Stream<Item = SubscribeEvent> {
         let (mut tx, rx) = futures::channel::mpsc::unbounded::<SubscribeEvent>();
 
         let callback = Box::new({

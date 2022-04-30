@@ -1,23 +1,20 @@
-use std::cell::Cell;
-use std::rc::Rc;
-
-use adw::gtk;
 use adw::prelude::*;
-use gtk::{glib, subclass::prelude::ObjectSubclassIsExt};
+use adw::subclass::prelude::*;
+use gtk::subclass::prelude::*;
+
+use pulse::proplist::properties;
+use pulse_async::SinkInputInfo;
+
+use gtk::CompositeTemplate;
+use once_cell::sync::Lazy;
+use std::cell::RefCell;
 
 mod imp {
-    use std::cell::RefCell;
-
-    use adw::prelude::*;
-    use adw::subclass::prelude::*;
-    use gtk::subclass::prelude::*;
-
-    use gtk::{glib, CompositeTemplate};
-    use once_cell::sync::Lazy;
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
-    #[template(file = "playback_item.ui")]
-    pub struct PlaybackItem {
+    #[template(file = "sink_input_item.ui")]
+    pub struct SinkInputItem {
         #[template_child]
         pub channel_scale: TemplateChild<crate::widgets::ChannelScale>,
         #[template_child]
@@ -29,9 +26,9 @@ mod imp {
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for PlaybackItem {
-        const NAME: &'static str = "PlaybackItem";
-        type Type = super::PlaybackItem;
+    impl ObjectSubclass for SinkInputItem {
+        const NAME: &'static str = "SinkInputItem";
+        type Type = super::SinkInputItem;
         type ParentType = adw::Bin;
         type Interfaces = (gtk::Buildable,);
 
@@ -44,7 +41,7 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for PlaybackItem {
+    impl ObjectImpl for SinkInputItem {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
@@ -70,7 +67,7 @@ mod imp {
                         "icon-name",
                         "App Icon",
                         "The app icon",
-                        Some("multimedia-player-symbolic"),
+                        Some("audio-speakers-symbolic"),
                         glib::ParamFlags::READWRITE
                             | glib::ParamFlags::CONSTRUCT
                             | glib::ParamFlags::EXPLICIT_NOTIFY,
@@ -105,20 +102,50 @@ mod imp {
             }
         }
     }
-    impl WidgetImpl for PlaybackItem {}
-    impl BuildableImpl for PlaybackItem {}
-    impl BinImpl for PlaybackItem {}
+    impl WidgetImpl for SinkInputItem {}
+    impl BuildableImpl for SinkInputItem {}
+    impl BinImpl for SinkInputItem {}
 }
 
 glib::wrapper! {
-    pub struct PlaybackItem(ObjectSubclass<imp::PlaybackItem>)
-        @extends gtk::Widget, adw::Bin,
-        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
+    pub struct SinkInputItem(ObjectSubclass<imp::SinkInputItem>) @extends gtk::Widget;
 }
 
-impl PlaybackItem {
+impl SinkInputItem {
     pub fn new() -> Self {
         glib::Object::new(&[]).expect("Failed to create ChannelScale")
+    }
+
+    pub fn update(&self, info: &SinkInputInfo) {
+        let app_name = info.proplist.get_str(properties::APPLICATION_NAME);
+
+        if let Some(title) = app_name.as_deref() {
+            let title = glib::markup_escape_text(title);
+            self.set_title(title.as_str());
+        }
+
+        if let Some(subtitle) = info.name.as_deref() {
+            let subtitle = glib::markup_escape_text(subtitle);
+            self.set_subtitle(&subtitle);
+        }
+
+        let theme = gtk::IconTheme::default();
+        let icon_name = info
+            .proplist
+            .get_str(properties::APPLICATION_ICON_NAME)
+            .and_then(|icon| theme.has_icon(&icon).then(|| icon))
+            .or_else(|| {
+                let icon = info.proplist.get_str(properties::APPLICATION_ID)?;
+                theme.has_icon(&icon).then(|| icon)
+            })
+            .or_else(|| {
+                let icon = app_name?.to_lowercase();
+                theme.has_icon(&icon).then(|| icon)
+            });
+
+        if let Some(icon_name) = icon_name {
+            self.set_icon(&icon_name);
+        }
     }
 
     pub fn channel_scale(&self) -> &crate::widgets::ChannelScale {
@@ -140,14 +167,7 @@ impl PlaybackItem {
     }
 
     pub fn set_icon(&self, icon: &str) {
-        let icon = if gtk::IconTheme::default().has_icon(icon) {
-            icon
-        } else {
-            "audio-speakers-symbolic"
-        };
-
         *self.imp().icon_name.borrow_mut() = icon.to_string();
-
         self.notify("icon-name");
     }
 
@@ -155,21 +175,6 @@ impl PlaybackItem {
     where
         F: Fn(&gtk::Scale, Box<dyn FnOnce()>) + 'static,
     {
-        let acked = Rc::new(Cell::new(true));
-        self.imp()
-            .channel_scale
-            .scale()
-            .connect_value_changed(move |scale| {
-                if acked.get() {
-                    acked.set(false);
-
-                    let acked = acked.clone();
-                    let done_notify = move || {
-                        acked.set(true);
-                    };
-
-                    cb(scale, Box::new(done_notify))
-                }
-            });
+        self.imp().channel_scale.get().connect_volume_changed(cb);
     }
 }

@@ -1,12 +1,12 @@
-use adw::gtk;
-use gtk::{glib, subclass::prelude::ObjectSubclassIsExt};
+use adw::subclass::prelude::*;
+use gtk::prelude::*;
+use gtk::subclass::prelude::*;
+
+use gtk::{traits::RangeExt, CompositeTemplate};
+use std::{cell::Cell, rc::Rc};
 
 mod imp {
-    use adw::subclass::prelude::*;
-    use gtk::prelude::*;
-    use gtk::subclass::prelude::*;
-
-    use gtk::{glib, CompositeTemplate};
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(file = "channel_scale.ui")]
@@ -60,5 +60,24 @@ impl ChannelScale {
 
     pub fn scale(&self) -> &gtk::Scale {
         &self.imp().scale
+    }
+
+    pub fn connect_volume_changed<F>(&self, cb: F)
+    where
+        F: Fn(&gtk::Scale, Box<dyn FnOnce()>) + 'static,
+    {
+        let acked = Rc::new(Cell::new(true));
+        self.imp().scale.connect_value_changed(move |scale| {
+            if acked.get() {
+                acked.set(false);
+
+                let acked = acked.clone();
+                let done_notify = move || {
+                    acked.set(true);
+                };
+
+                cb(scale, Box::new(done_notify))
+            }
+        });
     }
 }

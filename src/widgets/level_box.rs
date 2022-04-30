@@ -1,16 +1,14 @@
-use adw::gtk;
+use adw::subclass::prelude::*;
+use gtk::prelude::*;
+use gtk::subclass::prelude::*;
+
 use glib::ObjectExt;
-use gtk::{glib, subclass::prelude::ObjectSubclassIsExt};
+use gtk::CompositeTemplate;
+use once_cell::sync::Lazy;
+use std::cell::RefCell;
 
 mod imp {
-    use std::cell::RefCell;
-
-    use adw::subclass::prelude::*;
-    use gtk::prelude::*;
-    use gtk::subclass::prelude::*;
-
-    use gtk::{glib, CompositeTemplate};
-    use once_cell::sync::Lazy;
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(file = "level_box.ui")]

@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="SinkItem" parent="AdwBin">
+    <child>
+      <object class="AdwPreferencesGroup">
+        <child>
+          <object class="AdwPreferencesRow">
+            <property name="activatable">False</property>
+            <style>
+              <class name="no-border" />
+            </style>
+
+            <child>
+              <object class="GtkBox">
+                <property name="spacing">12</property>
+                <property name="valign">center</property>
+                <property name="hexpand">False</property>
+                <style>
+                  <class name="header" />
+                </style>
+
+                <child>
+                  <object class="LevelBox" id="level_box">
+                    <property name="icon-name" bind-source="SinkItem" bind-property="icon-name" bind-flags="sync-create" />
+                  </object>
+
+                  <!-- <object class="GtkLevelBar" id="level_bar">
+                    <property name="max-value">10</property>
+                    <property name="orientation">vertical</property>
+                    <property name="inverted">true</property>
+
+                    <child>
+                      <object class="GtkBox">
+                        <property name="spacing">12</property>
+                        <child>
+                          <object class="GtkImage">
+                            <property name="icon-name" bind-source="PlaybackItem" bind-property="icon" bind-flags="sync-create" />
+                            <property name="icon-size">large</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object> -->
+                </child>
+
+
+                <child>
+                  <object class="GtkBox">
+                    <property name="orientation">vertical</property>
+                    <property name="valign">center</property>
+                    <property name="hexpand">True</property>
+                    <style>
+                      <class name="title" />
+                    </style>
+
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="ellipsize">end</property>
+                        <property name="label" bind-source="SinkItem" bind-property="title" bind-flags="sync-create" />
+                        <property name="lines">0</property>
+                        <property name="mnemonic-widget">SinkItem</property>
+                        <property name="wrap">True</property>
+                        <property name="wrap-mode">word-char</property>
+                        <property name="xalign">0</property>
+                        <property name="use-markup">True</property>
+                        <style>
+                          <class name="title" />
+                        </style>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="ellipsize">end</property>
+                        <property name="label" bind-source="SinkItem" bind-property="subtitle" bind-flags="sync-create" />
+                        <property name="lines">0</property>
+                        <property name="wrap">True</property>
+                        <property name="wrap-mode">word-char</property>
+                        <property name="xalign">0</property>
+                        <property name="use-markup">True</property>
+                        <style>
+                          <class name="subtitle" />
+                        </style>
+                      </object>
+                    </child>
+
+                  </object>
+                </child>
+
+                <child>
+                  <object class="GtkBox">
+                    <property name="spacing">12</property>
+                    <!-- <child>
+                      <object class="GtkComboBoxText">
+                        <items>
+                          <item id="factory">Headphones</item>
+                          <item id="b">HDMI1</item>
+                        </items>
+
+                        <property name="valign">center</property>
+                        <property name="active">0</property>
+                      </object>
+
+                    </child> -->
+
+                    <child>
+                      <object class="GtkButton">
+                        <property name="icon-name">audio-volume-high-symbolic</property>
+                        <property name="valign">center</property>
+                        <style>
+                          <class name="flat" />
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <child>
+          <object class="AdwPreferencesRow">
+            <property name="activatable">False</property>
+            <child>
+              <object class="ChannelScale" id="channel_scale"></object>
+            </child>
+          </object>
+        </child>
+
+      </object>
+    </child>
+
+  </template>
+</interface>

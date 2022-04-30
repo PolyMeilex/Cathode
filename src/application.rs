@@ -32,8 +32,6 @@ mod imp {
 
     impl ApplicationImpl for CathodeApplication {
         fn activate(&self, application: &Self::Type) {
-            crate::widgets::init_types();
-
             // Get the current window or create one if necessary
             let window = if let Some(window) = application.active_window() {
                 window

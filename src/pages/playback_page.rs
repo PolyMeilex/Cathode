@@ -1,37 +1,33 @@
-use std::{cell::RefMut, collections::HashMap};
+use gtk::prelude::*;
 
-use adw::gtk;
-use gtk::subclass::prelude::ObjectSubclassIsExt;
-use pulse::{context::subscribe::Operation, proplist::properties};
+use adw::subclass::prelude::*;
+use gtk::subclass::prelude::*;
 
+use std::{
+    cell::{RefCell, RefMut},
+    collections::HashMap,
+};
+
+use gtk::{subclass::prelude::ObjectSubclassIsExt, CompositeTemplate};
+
+use pulse::context::subscribe::Operation;
 use pulse_async::SinkInputInfo;
 
-use super::PlaybackItem;
+use crate::widgets::SinkInputItem;
 
 mod imp {
-    use std::cell::RefCell;
-    use std::collections::HashMap;
-
-    use adw::subclass::prelude::*;
-    use gtk::prelude::*;
-    use gtk::subclass::prelude::*;
-
-    use gtk::{glib, CompositeTemplate};
-
-    use crate::widgets::PlaybackItem;
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(file = "playback_page.ui")]
     pub struct PlaybackPage {
-        // #[template_child]
-        // pub vbox: TemplateChild<gtk::Box>,
         #[template_child]
         pub flow_box: TemplateChild<gtk::FlowBox>,
 
         #[template_child]
         pub input_flow_box: TemplateChild<gtk::FlowBox>,
 
-        pub items: RefCell<HashMap<u32, PlaybackItem>>,
+        pub items: RefCell<HashMap<u32, SinkInputItem>>,
     }
 
     #[glib::object_subclass]
@@ -57,9 +53,7 @@ mod imp {
 }
 
 glib::wrapper! {
-    pub struct PlaybackPage(ObjectSubclass<imp::PlaybackPage>)
-        @extends gtk::Widget, adw::Bin,
-        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
+    pub struct PlaybackPage(ObjectSubclass<imp::PlaybackPage>) @extends gtk::Widget;
 }
 
 impl PlaybackPage {
@@ -67,7 +61,7 @@ impl PlaybackPage {
         glib::Object::new(&[]).expect("Failed to create ChannelScale")
     }
 
-    pub fn playback_items(&self) -> RefMut<HashMap<u32, PlaybackItem>> {
+    pub fn playback_items(&self) -> RefMut<HashMap<u32, SinkInputItem>> {
         self.imp().items.borrow_mut()
     }
 
@@ -89,7 +83,7 @@ impl PlaybackPage {
         }
     }
 
-    pub fn add_item(&self, info: &SinkInputInfo) -> PlaybackItem {
+    pub fn add_item(&self, info: &SinkInputInfo) -> SinkInputItem {
         let id = info.index;
 
         let item = {
@@ -98,7 +92,7 @@ impl PlaybackPage {
             if let Some(item) = items.get(&id) {
                 item.clone()
             } else {
-                let item = PlaybackItem::new();
+                let item = SinkInputItem::new();
 
                 self.imp().flow_box.get().append(&item);
                 items.insert(id, item.clone());
@@ -107,26 +101,7 @@ impl PlaybackPage {
             }
         };
 
-        let app_name = info.proplist.get_str(properties::APPLICATION_NAME);
-
-        let title = glib::markup_escape_text(app_name.as_deref().unwrap_or(""));
-        item.set_title(title.as_str());
-        let subtitle = glib::markup_escape_text(info.name.as_deref().unwrap_or("Unknown"));
-        item.set_subtitle(subtitle.as_str());
-
-        if let Some(icon) = info.proplist.get_str(properties::APPLICATION_ICON_NAME) {
-            item.set_icon(&icon);
-        } else {
-            let theme = gtk::IconTheme::default();
-
-            if let Some(name) = app_name {
-                let name = name.to_lowercase();
-
-                if theme.has_icon(&name) {
-                    item.set_icon(&name);
-                }
-            }
-        }
+        item.update(info);
 
         item
     }
