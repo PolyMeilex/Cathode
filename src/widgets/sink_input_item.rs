@@ -146,6 +146,18 @@ impl SinkInputItem {
         if let Some(icon_name) = icon_name {
             self.set_icon(&icon_name);
         }
+
+        if !info.corked && !info.mute {
+            self.channel_scale()
+                .scale()
+                .style_context()
+                .remove_class("inactive");
+        } else {
+            self.channel_scale()
+                .scale()
+                .style_context()
+                .add_class("inactive");
+        }
     }
 
     pub fn channel_scale(&self) -> &crate::widgets::ChannelScale {

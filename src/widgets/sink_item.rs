@@ -2,7 +2,7 @@ use adw::prelude::*;
 use adw::subclass::prelude::*;
 use gtk::subclass::prelude::*;
 
-use pulse::volume::Volume;
+use pulse::{def::SinkState, volume::Volume};
 use pulse_async::SinkInfo;
 
 use gtk::CompositeTemplate;
@@ -137,19 +137,18 @@ impl SinkItem {
 
         self.channel_scale().scale().set_value(volume);
 
-        match info.state {
-            pulse::def::SinkState::Running => {
-                self.channel_scale()
-                    .scale()
-                    .style_context()
-                    .remove_class("inactive");
-            }
-            _ => {
-                self.channel_scale()
-                    .scale()
-                    .style_context()
-                    .add_class("inactive");
-            }
+        let running = info.state == SinkState::Running;
+
+        if running && !info.mute {
+            self.channel_scale()
+                .scale()
+                .style_context()
+                .remove_class("inactive");
+        } else {
+            self.channel_scale()
+                .scale()
+                .style_context()
+                .add_class("inactive");
         }
     }
 

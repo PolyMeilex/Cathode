@@ -1,3 +1,7 @@
+scale trough highlight {
+  transition: background-color 1s;
+}
+
 scale.inactive trough highlight {
   background-color: grey;
 }
