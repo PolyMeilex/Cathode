@@ -10,7 +10,6 @@ use std::{
 
 use gtk::{subclass::prelude::ObjectSubclassIsExt, CompositeTemplate};
 
-use pulse::context::subscribe::Operation;
 use pulse_async::SinkInputInfo;
 
 use crate::widgets::SinkInputItem;

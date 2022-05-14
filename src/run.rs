@@ -10,7 +10,6 @@ use futures::StreamExt;
 use pulse::context::subscribe::Facility;
 use pulse::context::subscribe::InterestMaskSet;
 use pulse::context::subscribe::Operation;
-use pulse::def::BufferAttr;
 use pulse_async::SinkInputInfo;
 
 use crate::window::CathodeWindow;
@@ -79,10 +78,7 @@ pub fn run(win: CathodeWindow) {
                 .ok();
             });
 
-            let mut inner = context.inner.borrow_mut();
-            let mut context = &mut inner.context;
-
-            crate_stream(&mut context, id, None, item.level_bar().clone());
+            item.level_box().init_stream(context.clone(), id, None);
         }
 
         glib::MainContext::default().spawn_local(subscribe(win.clone(), tx.clone()));
@@ -166,16 +162,8 @@ fn new_sink_input(
         .ok();
     });
 
-    let stream = {
-        let mut inner = win.context().inner.borrow_mut();
-        crate_stream(
-            &mut inner.context,
-            input.sink,
-            Some(id),
-            item.level_bar().clone(),
-        )
-    };
-    item.set_stream(stream);
+    item.level_box()
+        .init_stream(win.context().clone(), input.sink, Some(id));
 }
 
 pub struct StreamGuard {
@@ -186,84 +174,4 @@ impl Drop for StreamGuard {
     fn drop(&mut self) {
         self.stream.borrow_mut().set_read_callback(None);
     }
-}
-
-fn crate_stream(
-    context: &mut pulse::context::Context,
-    id: u32,
-    stream_id: Option<u32>,
-    level_bar: gtk::LevelBar,
-) -> StreamGuard {
-    let stream = pulse::stream::Stream::new(
-        context,
-        "Stream Monitor",
-        &pulse::sample::Spec {
-            format: pulse::sample::Format::F32le,
-            rate: 25,
-            channels: 1,
-        },
-        None,
-    )
-    .unwrap();
-
-    let stream = Rc::new(RefCell::new(stream));
-
-    stream.borrow_mut().set_read_callback(Some(Box::new({
-        let stream = stream.clone();
-        let mut last = 0.0;
-        move |len| {
-            let mut stream = stream.borrow_mut();
-
-            let data = stream.peek().unwrap();
-
-            match data {
-                pulse::stream::PeekResult::Empty => todo!(),
-                pulse::stream::PeekResult::Hole(_) => todo!(),
-                pulse::stream::PeekResult::Data(data) => {
-                    let bytes: [u8; 4] = data.try_into().unwrap();
-                    let v = f32::from_le_bytes(bytes);
-
-                    let mut v = v as f64;
-
-                    // Big thanks to pavu for this block of code <3
-                    const DECAY_STEP: f64 = 0.04;
-                    if last >= DECAY_STEP {
-                        if v < last - DECAY_STEP {
-                            v = last - DECAY_STEP
-                        }
-                    }
-
-                    last = v;
-
-                    level_bar.set_value(v * 10.0);
-                }
-            }
-
-            if len != 0 {
-                stream.discard().unwrap();
-            }
-        }
-    })));
-
-    if let Some(stream_id) = stream_id {
-        stream.borrow_mut().set_monitor_stream(stream_id).unwrap();
-    }
-
-    stream
-        .borrow_mut()
-        .connect_record(
-            Some(&format!("{}", id)),
-            Some(&BufferAttr {
-                fragsize: std::mem::size_of::<f32>() as u32,
-                maxlength: u32::MAX,
-                ..Default::default()
-            }),
-            pulse::stream::FlagSet::DONT_MOVE
-                | pulse::stream::FlagSet::PEAK_DETECT
-                | pulse::stream::FlagSet::ADJUST_LATENCY
-                | pulse::stream::FlagSet::DONT_INHIBIT_AUTO_SUSPEND,
-        )
-        .unwrap();
-
-    StreamGuard { stream }
 }

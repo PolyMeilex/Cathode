@@ -156,8 +156,8 @@ impl SinkItem {
         &self.imp().channel_scale
     }
 
-    pub fn level_bar(&self) -> &gtk::LevelBar {
-        &self.imp().level_box.level_bar()
+    pub fn level_box(&self) -> &crate::widgets::LevelBox {
+        &self.imp().level_box
     }
 
     pub fn set_title(&self, title: &str) {

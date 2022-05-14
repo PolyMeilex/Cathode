@@ -13,6 +13,8 @@ use pulse::{
 };
 
 pub mod introspector;
+pub mod stream;
+
 use introspector::Introspector;
 pub use introspector::*;
 
@@ -96,12 +98,12 @@ impl Context {
     }
 
     pub fn subscribe(&self, mask: InterestMaskSet) -> impl futures::Stream<Item = SubscribeEvent> {
-        let (mut tx, rx) = futures::channel::mpsc::unbounded::<SubscribeEvent>();
+        let (tx, rx) = futures::channel::mpsc::unbounded::<SubscribeEvent>();
 
         let callback = Box::new({
-            let mut tx = tx.clone();
+            let tx = tx.clone();
             move |facility, operation, index| {
-                tx.start_send(Ok((facility, operation, index))).ok();
+                tx.unbounded_send(Ok((facility, operation, index))).ok();
             }
         });
 
@@ -115,16 +117,21 @@ impl Context {
             .context
             .subscribe(mask, move |success| {
                 if !success {
-                    tx.start_send(Err(())).ok();
+                    tx.unbounded_send(Err(())).ok();
                 }
             });
 
         rx
     }
+
+    pub fn crate_stream(&self, id: u32, stream_id: Option<u32>) -> stream::Stream {
+        super::stream::crate_stream(self, id, stream_id)
+    }
 }
 
 impl Drop for Inner {
     fn drop(&mut self) {
+        self.context.set_subscribe_callback(None);
         self.context.disconnect();
     }
 }

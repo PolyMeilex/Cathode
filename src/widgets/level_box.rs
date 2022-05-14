@@ -1,16 +1,19 @@
 use adw::subclass::prelude::*;
+use futures::pin_mut;
+use futures::StreamExt;
+use glib::ObjectExt;
+use glib::SourceId;
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
-
-use glib::ObjectExt;
 use gtk::CompositeTemplate;
 use once_cell::sync::Lazy;
+use once_cell::unsync::OnceCell;
 use std::cell::RefCell;
 
 mod imp {
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Default, CompositeTemplate)]
     #[template(file = "level_box.ui")]
     pub struct LevelBox {
         pub icon_name: RefCell<String>,
@@ -19,6 +22,8 @@ mod imp {
         pub level_bar: TemplateChild<gtk::LevelBar>,
         #[template_child]
         pub image: TemplateChild<gtk::Image>,
+
+        pub stream: RefCell<OnceCell<SourceId>>,
     }
 
     #[glib::object_subclass]
@@ -80,6 +85,10 @@ mod imp {
         }
 
         fn dispose(&self, obj: &Self::Type) {
+            if let Some(id) = self.stream.borrow_mut().take() {
+                id.remove();
+            }
+
             while let Some(child) = obj.first_child() {
                 child.unparent();
             }
@@ -108,5 +117,42 @@ impl LevelBox {
 
     pub fn level_bar(&self) -> &gtk::LevelBar {
         &self.imp().level_bar
+    }
+
+    pub fn set_stream(&self, stream: SourceId) {
+        self.imp().stream.borrow_mut().set(stream).ok();
+    }
+
+    pub fn init_stream(
+        &self,
+        context: pulse_async::context::Context,
+        id: u32,
+        stream_id: Option<u32>,
+    ) {
+        let level_bar = self.level_bar().clone();
+        let source_id = glib::MainContext::default().spawn_local(async move {
+            let stream = context.crate_stream(id, stream_id);
+
+            pin_mut!(stream);
+
+            let mut last = 0.0;
+            while let Some(v) = stream.next().await {
+                let mut v = v as f64;
+
+                // Thanks to pavu for this block of code <3
+                const DECAY_STEP: f64 = 0.04;
+                if last >= DECAY_STEP {
+                    if v < last - DECAY_STEP {
+                        v = last - DECAY_STEP
+                    }
+                }
+
+                last = v;
+
+                level_bar.set_value(v * 10.0);
+            }
+        });
+
+        self.set_stream(source_id);
     }
 }
