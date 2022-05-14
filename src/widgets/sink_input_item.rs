@@ -9,10 +9,16 @@ use gtk::CompositeTemplate;
 use once_cell::sync::Lazy;
 use std::cell::RefCell;
 
+use crate::run::StreamGuard;
+
 mod imp {
+    use once_cell::sync::OnceCell;
+
+    use crate::run::StreamGuard;
+
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Default, CompositeTemplate)]
     #[template(file = "sink_input_item.ui")]
     pub struct SinkInputItem {
         #[template_child]
@@ -23,6 +29,8 @@ mod imp {
         pub title: RefCell<String>,
         pub subtitle: RefCell<String>,
         pub icon_name: RefCell<String>,
+
+        pub stream: OnceCell<StreamGuard>,
     }
 
     #[glib::object_subclass]
@@ -181,6 +189,10 @@ impl SinkInputItem {
     pub fn set_icon(&self, icon: &str) {
         *self.imp().icon_name.borrow_mut() = icon.to_string();
         self.notify("icon-name");
+    }
+
+    pub fn set_stream(&self, stream: StreamGuard) {
+        self.imp().stream.set(stream).ok();
     }
 
     pub fn connect_volume_changed<F>(&self, cb: F)

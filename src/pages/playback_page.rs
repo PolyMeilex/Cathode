@@ -65,24 +65,6 @@ impl PlaybackPage {
         self.imp().items.borrow_mut()
     }
 
-    pub async fn event(&self, context: &pulse_async::Context, op: &Operation, id: u32) {
-        match op {
-            Operation::New => {
-                if let Ok(info) = context.introspect().sink_input(id).await {
-                    self.add_item(&info);
-                }
-            }
-            Operation::Changed => {
-                if let Ok(info) = context.introspect().sink_input(id).await {
-                    self.add_item(&info);
-                }
-            }
-            Operation::Removed => {
-                self.remove_item(id);
-            }
-        }
-    }
-
     pub fn add_item(&self, info: &SinkInputInfo) -> SinkInputItem {
         let id = info.index;
 

@@ -37,7 +37,7 @@ mod imp {
                 window
             } else {
                 let window = CathodeWindow::new(application);
-                crate::run::run(&window);
+                crate::run::run(window.clone());
                 window.upcast()
             };
 
