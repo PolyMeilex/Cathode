@@ -95,6 +95,7 @@ impl futures::Stream for Stream {
 
 impl Drop for Stream {
     fn drop(&mut self) {
+        dbg!("drop");
         self.stream.set_read_callback(None);
     }
 }

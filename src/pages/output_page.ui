@@ -20,6 +20,8 @@
                         <property name="valign">start</property>
                         <property name="homogeneous">true</property>
                         <property name="selection-mode">none</property>
+                        <property name="max-children-per-line">1</property>
+                        <property name="min-children-per-line">1</property>
                       </object>
                     </child>
                   </object>
@@ -34,6 +36,8 @@
                         <property name="valign">start</property>
                         <property name="homogeneous">true</property>
                         <property name="selection-mode">none</property>
+                        <property name="max-children-per-line">1</property>
+                        <property name="min-children-per-line">1</property>
                       </object>
                     </child>
                   </object>
