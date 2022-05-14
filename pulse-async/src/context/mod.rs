@@ -136,7 +136,7 @@ mod tests {
     #[test]
     fn context() {
         let props = Proplist::new().unwrap();
-        let mut context = Context::new_with_proplist("Test", &props);
+        let context = Context::new_with_proplist("Test", &props);
 
         glib::MainContext::default().block_on(async move {
             context.connect(None, FlagSet::NOFLAGS).await.unwrap();
@@ -147,7 +147,7 @@ mod tests {
     #[ignore]
     fn subscribe() {
         let props = Proplist::new().unwrap();
-        let mut context = Context::new_with_proplist("Test", &props);
+        let context = Context::new_with_proplist("Test", &props);
 
         glib::MainContext::default().block_on(async move {
             context.connect(None, FlagSet::NOFLAGS).await.unwrap();
