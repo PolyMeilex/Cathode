@@ -123,9 +123,9 @@ impl Context {
     }
 }
 
-impl Drop for Context {
+impl Drop for Inner {
     fn drop(&mut self) {
-        self.disconnect();
+        self.context.disconnect();
     }
 }
 
